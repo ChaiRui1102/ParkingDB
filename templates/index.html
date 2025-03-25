@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Parking Citations Map</title>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 600px; width: 100%; }
+  </style>
+</head>
+<body>
+  <h2>LA Parking Citations Map</h2>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([34.05, -118.25], 12); // Centered on LA
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    fetch('http://127.0.0.1:5000/api/citations')
+      .then(response => response.json())
+      .then(data => {
+        data.forEach(citation => {
+          if (citation.latitude && citation.longitude) {
+            L.marker([citation.latitude, citation.longitude])
+              .addTo(map)
+              .bindPopup(citation.location || 'No location');
+          }
+        });
+      });
+  </script>
+</body>
+</html>
