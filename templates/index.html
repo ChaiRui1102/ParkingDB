@@ -9,6 +9,8 @@
   </style>
 </head>
 <body>
+  <input id="search" type="text" placeholder="Enter address..." style="width:300px;" />
+  <button onclick="search()">Search</button>
   <h2>LA Parking Citations Map</h2>
   <div id="map"></div>
 
@@ -31,6 +33,30 @@
           }
         });
       });
-  </script>
+
+  function search() {
+    const query = document.getElementById("search").value;
+    if (!query) return;
+  
+    fetch(`/api/search?address=${encodeURIComponent(query)}`)
+      .then(res => res.json())
+      .then(data => {
+        map.eachLayer(layer => {
+          if (layer instanceof L.Marker) map.removeLayer(layer);
+        });
+  
+        data.forEach(c => {
+          L.marker([c.latitude, c.longitude])
+            .addTo(map)
+            .bindPopup(`${c.location}<br>Distance: ${c.distance_km.toFixed(2)} km`);
+        });
+  
+        if (data.length) {
+          map.setView([data[0].latitude, data[0].longitude], 16);
+        }
+      });
+  }
+</script>
+    
 </body>
 </html>
