@@ -3,7 +3,7 @@ import requests
 import time
 
 # === CONFIG ===
-API_KEY = "/"  # ← Replace this
+API_KEY = ""  # ← Replace this
 DB_PASSWORD = "114514"    # ← Replace this
 
 db = mysql.connector.connect(

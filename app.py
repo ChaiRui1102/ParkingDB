@@ -1,56 +1,11 @@
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 import mysql.connector
-import math
 import requests
-import json
 
-app = Flask(__name__)  # ← THIS must be declared before @app.route
+app = Flask(__name__)
 
-# === MySQL Connection ===
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="114514",         # Replace this
-    database="parking_tickets"
-)
-
-@app.route("/")
-def map_view():
-    return render_template("index.html")
-
-@app.route("/api/citations")
-def get_citations():
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT latitude, longitude, location
-        FROM citations
-        WHERE latitude BETWEEN 33 AND 35
-          AND longitude BETWEEN -119 AND -117
-        LIMIT 500;
-    """)
-    results = cursor.fetchall()
-    cursor.close()
-    return jsonify(results)
-
-def haversine_sql(lat, lng, radius_km=0.5):
-    # Haversine distance formula in SQL (approximate)
-    return f"""
-        SELECT latitude, longitude, location,
-        (6371 * acos(
-            cos(radians({lat})) *
-            cos(radians(latitude)) *
-            cos(radians(longitude) - radians({lng})) +
-            sin(radians({lat})) *
-            sin(radians(latitude))
-        )) AS distance_km
-        FROM citations
-        HAVING distance_km < {radius_km}
-        ORDER BY distance_km
-        LIMIT 100;
-    """
-
-
-API_KEY = "YOUR_GOOGLE_API_KEY"  # Replace with your actual key
+# === Config ===
+API_KEY = "/"  # Replace with your actual key
 
 def geocode_address(address):
     url = "https://maps.googleapis.com/maps/api/geocode/json"
@@ -65,6 +20,31 @@ def geocode_address(address):
         return location["lat"], location["lng"]
     return None, None
 
+# === Database Connection ===
+db = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="114514",  # Replace this
+    database="parking_tickets"
+)
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/api/citations")
+def get_citations():
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT latitude, longitude, location
+        FROM citations
+        WHERE latitude BETWEEN 33 AND 35
+          AND longitude BETWEEN -119 AND -117
+        LIMIT 1000;
+    """)
+    results = cursor.fetchall()
+    cursor.close()
+    return jsonify(results)
 
 @app.route("/api/search")
 def search_by_address():
@@ -72,17 +52,46 @@ def search_by_address():
     if not address:
         return jsonify({"error": "Address required"}), 400
 
-    lat, lng = geocode_address(address)  # Reuse your existing geocode function
-
+    lat, lng = geocode_address(address)
     if not lat or not lng:
         return jsonify({"error": "Could not geocode address"}), 404
 
+    query = f"""
+        SELECT latitude, longitude, location,
+        (6371 * acos(
+            cos(radians({lat})) *
+            cos(radians(latitude)) *
+            cos(radians(longitude) - radians({lng})) +
+            sin(radians({lat})) *
+            sin(radians(latitude))
+        )) AS distance_km
+        FROM citations
+        HAVING distance_km < 1.0
+        ORDER BY distance_km
+        LIMIT 100;
+    """
+
     cursor = db.cursor(dictionary=True)
-    cursor.execute(haversine_sql(lat, lng))
+    cursor.execute(query)
     results = cursor.fetchall()
     cursor.close()
     return jsonify(results)
 
+@app.route("/api/geocode")
+def geocode_only():
+    address = request.args.get("address")
+    if not address:
+        return jsonify({"error": "No address provided"}), 400
+
+    lat, lng = geocode_address(address)
+    if not lat or not lng:
+        return jsonify({"error": "Could not geocode address"}), 404
+
+    return jsonify({"lat": lat, "lng": lng})
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory('static', filename)
 
 if __name__ == '__main__':
     app.run(debug=True)

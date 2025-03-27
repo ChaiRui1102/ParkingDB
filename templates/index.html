@@ -1,62 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Parking Citations Map</title>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LA Parking Citations Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
-    #map { height: 600px; width: 100%; }
-  </style>
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-  <input id="search" type="text" placeholder="Enter address..." style="width:300px;" />
-  <button onclick="search()">Search</button>
-  <h2>LA Parking Citations Map</h2>
+  <div id="search-container">
+    <input id="search" type="text" placeholder="Search an address..." />
+    <button onclick="search()">Search</button>
+    <span id="status"></span>
+  </div>
   <div id="map"></div>
-
+  
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    const map = L.map('map').setView([34.05, -118.25], 12); // Centered on LA
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    fetch('http://127.0.0.1:5000/api/citations')
-      .then(response => response.json())
-      .then(data => {
-        data.forEach(citation => {
-          if (citation.latitude && citation.longitude) {
-            L.marker([citation.latitude, citation.longitude])
-              .addTo(map)
-              .bindPopup(citation.location || 'No location');
-          }
-        });
-      });
-
-  function search() {
-    const query = document.getElementById("search").value;
-    if (!query) return;
-  
-    fetch(`/api/search?address=${encodeURIComponent(query)}`)
-      .then(res => res.json())
-      .then(data => {
-        map.eachLayer(layer => {
-          if (layer instanceof L.Marker) map.removeLayer(layer);
-        });
-  
-        data.forEach(c => {
-          L.marker([c.latitude, c.longitude])
-            .addTo(map)
-            .bindPopup(`${c.location}<br>Distance: ${c.distance_km.toFixed(2)} km`);
-        });
-  
-        if (data.length) {
-          map.setView([data[0].latitude, data[0].longitude], 16);
-        }
-      });
-  }
-</script>
-    
+  <script src="/static/script.js"></script>
 </body>
 </html>
