@@ -4,6 +4,20 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
+function loadAllCitations() {
+  fetch('/api/citations')
+    .then(res => res.json())
+    .then(data => {
+      data.forEach(c => {
+        L.marker([c.latitude, c.longitude])
+          .addTo(map)
+          .bindPopup(c.location || 'No location');
+      });
+    });
+}
+
+loadAllCitations();
+
 function search() {
   const query = document.getElementById("search").value;
   const status = document.getElementById("status");
@@ -23,6 +37,8 @@ function search() {
         }
       });
 
+      loadAllCitations();
+
       if (data.length > 0) {
         const lat = data[0].latitude;
         const lng = data[0].longitude;
@@ -39,12 +55,11 @@ function search() {
           [lat + offset, lng + offset]
         ];
 
-        L.rectangle(bounds, { color: "#1a73e8", weight: 1, fillOpacity: 0.1 }).addTo(map);
+        L.rectangle(bounds, { color: "#1a73e8", weight: 2, fillOpacity: 0.2 }).addTo(map);
         map.setView([lat, lng], 16);
         status.textContent = `${data.length} citations found nearby.`;
       } else {
         status.textContent = "No citations found in this area.";
-        // Draw rectangle anyway
         fetch(`/api/geocode?address=${encodeURIComponent(query)}`)
           .then(res => res.json())
           .then(loc => {
@@ -54,7 +69,7 @@ function search() {
                 [loc.lat - offset, loc.lng - offset],
                 [loc.lat + offset, loc.lng + offset]
               ];
-              L.rectangle(bounds, { color: "#f44336", weight: 1, fillOpacity: 0.1 }).addTo(map);
+              L.rectangle(bounds, { color: "#f44336", weight: 2, fillOpacity: 0.2 }).addTo(map);
               map.setView([loc.lat, loc.lng], 16);
             }
           });

@@ -3,8 +3,8 @@ import requests
 import time
 
 # === CONFIG ===
-API_KEY = ""  # ← Replace this
-DB_PASSWORD = "114514"    # ← Replace this
+API_KEY = "YOUR_GOOGLE_API_KEY"  # Replace this
+DB_PASSWORD = "114514"    # Replace this
 
 db = mysql.connector.connect(
     host="localhost",
@@ -14,7 +14,6 @@ db = mysql.connector.connect(
 )
 
 def clean_address(location):
-    """Convert vague or intersection addresses to clearer format."""
     location = location.strip()
     if "/" in location:
         parts = location.split("/")
@@ -37,18 +36,13 @@ def geocode_address(address):
 
 cursor = db.cursor()
 
-# Get entries with placeholder coordinates
-cursor.execute("""
-    SELECT latitude, longitude, location
-    FROM citations
-    WHERE latitude BETWEEN 33 AND 35
-      AND longitude BETWEEN -119 AND -117
-    LIMIT 500;
-""")
-
-
-
+cursor.execute("SELECT ticket_number, location FROM citations WHERE latitude >= 90 OR latitude = 99999 LIMIT 50")
 rows = cursor.fetchall()
+
+if not rows:
+    print("All records are already geocoded. Nothing to do.")
+else:
+    print(f"Updating {len(rows)} rows...")
 
 for ticket_number, raw_location in rows:
     if raw_location:
@@ -64,7 +58,7 @@ for ticket_number, raw_location in rows:
             db.commit()
         else:
             print(f" [!] Failed: {cleaned}")
-        time.sleep(0.2)  # Be kind to the API
+        time.sleep(0.2)
     else:
         print(" [!] No location provided.")
 
