@@ -3,8 +3,8 @@ import requests
 import time
 
 # === CONFIG ===
-API_KEY = "YOUR_GOOGLE_API_KEY"  # Replace this
-DB_PASSWORD = "114514"    # Replace this
+API_KEY = "/"  # Replace this
+DB_PASSWORD = "123456"    # Replace this
 
 db = mysql.connector.connect(
     host="localhost",
